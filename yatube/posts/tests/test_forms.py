@@ -1,24 +1,10 @@
-import shutil
-import tempfile
-
 from ..forms import PostForm
-from django.contrib.auth import get_user_model
-from ..models import Group, Post
-from django.conf import settings
+from ..models import Group, Post, User
 # from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 
-User = get_user_model()
 
-# Создаем временную папку для медиа-файлов;
-# на момент теста медиа папка будет переопределена
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
-
-
-# Для сохранения media-файлов в тестах будет использоваться
-# временная папка TEMP_MEDIA_ROOT, а потом мы ее удалим
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -36,16 +22,6 @@ class PostModelTest(TestCase):
             pk=1
         )
         cls.form = PostForm()
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        # Модуль shutil - библиотека Python с удобными инструментами
-        # для управления файлами и директориями:
-        # создание, удаление, копирование, перемещение,
-        # изменение папок и файлов
-        # Метод shutil.rmtree удаляет директорию и всё её содержимое
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.guest_client = Client()
@@ -66,23 +42,33 @@ class PostModelTest(TestCase):
             data=form_data,
             follow=True
         )
-
         # Проверяем, сработал ли редирект
-        self.assertRedirects(response, reverse('posts:profile',
-                                               kwargs={'username':
-                                                       self.user.username}))
+        self.assertRedirects(response, reverse(
+            'posts:profile',
+            kwargs={
+                'username':
+                    self.user.username}))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным слагом
         self.assertTrue(
-            Post.objects.filter(
-                text='Тестовый текст',
+            Post.objects.exclude(pk=1).filter(
+                text=form_data['text'],
                 author=self.user,
-                group=self.group.id
+                group=form_data['group']
             ).exists()
         )
+        self.assertEqual(Post.objects.count(), posts_count + 1)
+        # Проверяем, что создалась запись с заданным слагом
+        self.assertEqual(Post.objects.exclude(pk=1)[0].id, 2)
+        self.assertEqual(
+            Post.objects.exclude(pk=1)[0].text, form_data['text']),
+        self.assertEqual(
+            Post.objects.exclude(pk=1)[0].group.id,
+            form_data['group'])
 
     def test_edit_post(self):
+        post = Post.objects.all()[0]
         """Валидная форма создает запись в Task."""
         # Подсчитаем количество записей в Task
         form_data = {
@@ -92,22 +78,17 @@ class PostModelTest(TestCase):
         # Отправляем POST-запрос
         posts_count = Post.objects.count()
         response = self.authorized_client.post(
-            reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
+            reverse('posts:post_edit', kwargs={'post_id': post.id}),
             data=form_data,
             follow=True
         )
 
         # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse('posts:post_detail',
-                                               kwargs={'post_id':
-                                                       self.post.id}))
+                                               kwargs={'post_id': post.id}))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), posts_count)
         # Проверяем, что создалась запись с заданным слагом
-        self.assertTrue(
-            Post.objects.filter(
-                text='Тестовый тексто',
-                author=self.user,
-                group=self.group.id
-            ).exists()
-        )
+        self.assertEqual(Post.objects.all()[0].id, post.id)
+        self.assertEqual(Post.objects.all()[0].text, form_data['text']),
+        self.assertEqual(Post.objects.all()[0].group.id, form_data['group'])

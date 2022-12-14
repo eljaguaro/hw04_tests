@@ -1,16 +1,18 @@
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django import forms
 from django.urls import reverse
-from ..models import Group, Post
+from ..models import Group, Post, User
 
-User = get_user_model()
+POSTSNUM_PAGE1 = 10
+POSTSNUM_PAGE2_1 = 3
+POSTSNUM_PAGE_EMT = 0
 
 
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        ALL_POSTS = 13
         cls.user = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
             title='Тестовая группа',
@@ -22,6 +24,14 @@ class PostModelTest(TestCase):
             text='Тестовый пост1234567',
             group=cls.group
         )
+        many_posts = []
+        for _ in range(ALL_POSTS):
+            many_posts.append(Post(
+                author=cls.user,
+                text='Тестовый пост1234567',
+                group=cls.group
+            ))
+        Post.objects.bulk_create(many_posts)
 
     def setUp(self):
         # Создаем авторизованный клиент
@@ -30,30 +40,38 @@ class PostModelTest(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
+    def post_test(self, post):
+        self.assertEqual(post.text, 'Тестовый пост1234567')
+        self.assertEqual(post.group, self.group)
+
     def test_home_page_show_correct_context(self):
         response = self.guest_client.get(reverse('posts:index'))
-        expected = list(Post.objects.all()[:10])
-        self.assertEqual(list(response.context['page_obj']), expected)
+        posts = list(response.context['page_obj'])
+        for i in posts:
+            self.post_test(i)
 
     def test_group_list_show_correct_context(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}))
-        expected = list(Post.objects.all()[:10])
-        self.assertEqual(list(response.context['page_obj']), expected)
+        posts = list(response.context['page_obj'])
+        for i in posts:
+            self.post_test(i)
 
     def test_profile_show_correct_context(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={'username': self.post.author.username}))
-        expected = list(Post.objects.all()[:10])
-        self.assertEqual(list(response.context['page_obj']), expected)
+        posts = list(response.context['page_obj'])
+        for i in posts:
+            self.post_test(i)
 
     def test_post_detail_pages_show_correct_context(self):
         response = self.guest_client.get(reverse(
             'posts:post_detail', kwargs={'post_id': self.post.id}))
-        self.assertEqual(response.context.get('post').text, self.post.text)
-        self.assertEqual(response.context.get('post').author, self.post.author)
+        postcont = response.context.get('post')
+        self.assertEqual(postcont.text, self.post.text)
+        self.assertEqual(postcont.author, self.post.author)
 
     def test_create_post_show_correct_context(self):
         response = self.authorized_client.get(reverse('posts:post_create'))
@@ -72,31 +90,34 @@ class PostModelTest(TestCase):
             kwargs={'post_id': self.post.id}))
         form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField
+            'group': forms.fields.ChoiceField,
         }
         for value, expected in form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
+        self.assertEqual(response.context.get('is_edit'), True)
 
 
 class PaginatorViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        ALL_POSTS = 13
         cls.user = User.objects.create_user(username='autha')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
             description='Тестовое описание',
         )
-        for _ in range(13):
-            Post.objects.create(
+        many_posts = []
+        for _ in range(ALL_POSTS):
+            many_posts.append(Post(
                 author=cls.user,
-                text='Test post',
+                text='test post',
                 group=cls.group
-            )
-        # Post.objects.bulk_create(many_posts)
+            ))
+        Post.objects.bulk_create(many_posts)
 
     def setUp(self):
         # Создаем авторизованный клиент
@@ -107,40 +128,40 @@ class PaginatorViewsTest(TestCase):
     def test_index_pag(self):
         response = self.guest_client.get(reverse('posts:index'))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), 10)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
 
     def test_index_pag2(self):
         # Проверка: на второй странице должно быть три поста.
         response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
 
     def test_group_list_pag(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), 10)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
 
     def test_group_list_pag2(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}) + '?page=2')
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
 
     def test_profile_pag(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={
                 'username': self.user.username}))
-        self.assertEqual(len(response.context['page_obj']), 10)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
 
     def test_profile_pag2(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={
                 'username': self.user.username}) + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
 
 
 class DopTest(TestCase):
@@ -185,7 +206,7 @@ class DopTest(TestCase):
         response = self.guest_client.get(reverse(
             'posts:group_list', kwargs={'slug': self.group2.slug}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), 0)
+        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE_EMT)
 
     def test_profile_page_post(self):
         response = self.guest_client.get(reverse(
