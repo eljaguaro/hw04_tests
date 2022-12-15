@@ -60,7 +60,7 @@ class PostModelTest(TestCase):
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным слагом
-        self.assertEqual(Post.objects.exclude(pk=1)[0].id, 2)
+        self.assertEqual(Post.objects.exclude(pk=1).first().id, self.post.id + 1)
         self.assertEqual(
             Post.objects.exclude(pk=1)[0].text, form_data['text']),
         self.assertEqual(
@@ -89,6 +89,6 @@ class PostModelTest(TestCase):
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), posts_count)
         # Проверяем, что создалась запись с заданным слагом
-        self.assertEqual(Post.objects.all()[0].id, post.id)
+        self.assertEqual(Post.objects.all().first().id, post.id)
         self.assertEqual(Post.objects.all()[0].text, form_data['text']),
         self.assertEqual(Post.objects.all()[0].group.id, form_data['group'])

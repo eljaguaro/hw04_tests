@@ -41,14 +41,12 @@ class PostModelTest(TestCase):
         self.authorized_client.force_login(self.user)
 
     def post_test(self, post):
-        self.assertEqual(post.text, 'Тестовый пост1234567')
+        self.assertEqual(post.text, self.post.text)
         self.assertEqual(post.group, self.group)
 
     def test_home_page_show_correct_context(self):
         response = self.guest_client.get(reverse('posts:index'))
-        posts = list(response.context['page_obj'])
-        for i in posts:
-            self.post_test(i)
+        self.post_test(response.context['page_obj'][-1])
 
     def test_group_list_show_correct_context(self):
         response = self.guest_client.get(reverse(

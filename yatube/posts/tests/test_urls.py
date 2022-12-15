@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from ..models import Post, Group, User
+from http import HTTPStatus
 
 
 class TaskURLTests(TestCase):
@@ -49,52 +50,52 @@ class TaskURLTests(TestCase):
         пользователя.
         """
         response = self.guest_client.get('/dwdwew/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_home_url_exists_at_desired_location(self):
         """Страница / доступна любому пользователю."""
         response = self.guest_client.get('/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_added_url_exists_at_desired_location(self):
         """Страница /create/ перенаправляет анонимного пользователю."""
         response = self.guest_client.get('/create/')
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_post_added_url_exists_at_desired_location_auth(self):
         """Страница /create/ доступна авторизованному пользователю."""
         response = self.authorized_client.get('/create/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_groups__url_exists_at_desired_location_authorized(self):
         """Страница /group/test-slug/ доступна любому
         пользователю."""
         response = self.guest_client.get('/group/test-slug/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     # Проверяем редиректы для неавторизованного пользователя
     def test_post_edit_url_redirect_anonymous(self):
         """Страница /post/1/edit перенаправляет анонимного пользователя."""
         response = self.guest_client.get('/posts/1/edit/')
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_post_edit_url_redirect_anonymous_authzed(self):
         """Страница /post/1/edit доступна авторизованному пользователю.
         """
         response = self.authorized_client.get('/posts/1/edit/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def group_url_test(self):
         """Страница группы доступна любому пользователю."""
         response = self.guest_client.get('group/test-slug/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def profile_url_test(self):
         """Страница профиля доступна любому пользователю."""
         response = self.guest_client.get('profile/david/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def posts_url_test(self):
         """Страница поста доступна любому пользователю."""
         response = self.guest_client.get('posts/1/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
