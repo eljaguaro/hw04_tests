@@ -60,7 +60,8 @@ class PostModelTest(TestCase):
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным слагом
-        self.assertEqual(Post.objects.exclude(pk=1).first().id, self.post.id + 1)
+        self.assertEqual(
+            Post.objects.exclude(pk=1).first().id, self.post.id + 1)
         self.assertEqual(
             Post.objects.exclude(pk=1)[0].text, form_data['text']),
         self.assertEqual(
