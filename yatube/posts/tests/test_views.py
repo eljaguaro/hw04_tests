@@ -115,41 +115,47 @@ class PaginatorViewsTest(TestCase):
 
     def test_index_pag(self):
         response = self.guest_client.get(reverse('posts:index'))
+        post = response.context['page_obj']
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
+        self.assertEqual(len(post), POSTSNUM_PAGE1)
 
     def test_index_pag2(self):
         # Проверка: на второй странице должно быть три поста.
         response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
+        post = response.context['page_obj']
+        self.assertEqual(len(post), POSTSNUM_PAGE2_1)
 
     def test_group_list_pag(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
+        post = response.context['page_obj']
+        self.assertEqual(len(post), POSTSNUM_PAGE1)
 
     def test_group_list_pag2(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}) + '?page=2')
+        post = response.context['page_obj']
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
+        self.assertEqual(len(post), POSTSNUM_PAGE2_1)
 
     def test_profile_pag(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={
                 'username': self.user.username}))
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE1)
+        post = response.context['page_obj']
+        self.assertEqual(len(post), POSTSNUM_PAGE1)
 
     def test_profile_pag2(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={
                 'username': self.user.username}) + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE2_1)
+        post = response.context['page_obj']
+        self.assertEqual(len(post), POSTSNUM_PAGE2_1)
 
 
 class DopTest(TestCase):
@@ -181,20 +187,23 @@ class DopTest(TestCase):
 
     def test_index_post(self):
         response = self.guest_client.get(reverse('posts:index'))
+        post = response.context['page_obj']
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(response.context['page_obj'][-1], self.post)
+        self.assertEqual(post[-1], self.post)
 
     def test_group_list_post(self):
         response = self.guest_client.get(reverse(
             'posts:group_list', kwargs={'slug': self.group.slug}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(response.context['page_obj'][-1], self.post)
+        post = response.context['page_obj']
+        self.assertEqual(post[-1], self.post)
 
     def test_wr_group_list_post(self):
         response = self.guest_client.get(reverse(
             'posts:group_list', kwargs={'slug': self.group2.slug}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), POSTSNUM_PAGE_EMT)
+        post = response.context['page_obj']
+        self.assertEqual(len(post), POSTSNUM_PAGE_EMT)
 
     def test_profile_page_post(self):
         response = self.guest_client.get(reverse(
@@ -203,4 +212,5 @@ class DopTest(TestCase):
                 'username':
                     self.post.author.username}))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(response.context['page_obj'][-1], self.post)
+        post = response.context['page_obj']
+        self.assertEqual(post[-1], self.post)
