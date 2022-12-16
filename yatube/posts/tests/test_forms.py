@@ -29,6 +29,7 @@ class PostModelTest(TestCase):
         self.authorized_client.force_login(self.user)
 
     def test_create_post(self):
+        post = Post.objects.exclude(pk=1)
         """Валидная форма создает запись в Task."""
         # Подсчитаем количество записей в Task
         posts_count = Post.objects.count()
@@ -52,7 +53,7 @@ class PostModelTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным слагом
         self.assertTrue(
-            Post.objects.exclude(pk=1).filter(
+            post.filter(
                 text=form_data['text'],
                 author=self.user,
                 group=form_data['group']
@@ -61,35 +62,36 @@ class PostModelTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         # Проверяем, что создалась запись с заданным слагом
         self.assertEqual(
-            Post.objects.exclude(pk=1).first().id, self.post.id + 1)
+            post.first().id, self.post.id + 1)
         self.assertEqual(
-            Post.objects.exclude(pk=1)[0].text, form_data['text']),
+            post.first().text, form_data['text']),
         self.assertEqual(
-            Post.objects.exclude(pk=1)[0].group.id,
+            post.first().group.id,
             form_data['group'])
 
     def test_edit_post(self):
-        post = Post.objects.all()[0]
-        """Валидная форма создает запись в Task."""
-        # Подсчитаем количество записей в Task
+        post = Post.objects.all()
         form_data = {
             'text': 'Тестовый тексто',
             'group': self.group.id
         }
         # Отправляем POST-запрос
         posts_count = Post.objects.count()
-        response = self.authorized_client.post(
-            reverse('posts:post_edit', kwargs={'post_id': post.id}),
+        response = self.authorized_client.post(reverse(
+            'posts:post_edit',
+            kwargs={
+                'post_id': self.post.id}),
             data=form_data,
             follow=True
         )
 
         # Проверяем, сработал ли редирект
-        self.assertRedirects(response, reverse('posts:post_detail',
-                                               kwargs={'post_id': post.id}))
+        self.assertRedirects(response,
+                             reverse('posts:post_detail',
+                                     kwargs={'post_id': self.post.id}))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), posts_count)
-        # Проверяем, что создалась запись с заданным слагом
-        self.assertEqual(Post.objects.all().first().id, post.id)
-        self.assertEqual(Post.objects.all()[0].text, form_data['text']),
-        self.assertEqual(Post.objects.all()[0].group.id, form_data['group'])
+        # Проверяем, что создалаь запись с заданным слагом
+        self.assertEqual(post.first().id, self.post.id)
+        self.assertEqual(post.first().text, form_data['text']),
+        self.assertEqual(post.first().group.id, form_data['group'])

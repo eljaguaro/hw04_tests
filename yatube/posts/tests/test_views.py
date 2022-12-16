@@ -12,7 +12,6 @@ class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        ALL_POSTS = 13
         cls.user = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
             title='Тестовая группа',
@@ -24,14 +23,6 @@ class PostModelTest(TestCase):
             text='Тестовый пост1234567',
             group=cls.group
         )
-        many_posts = []
-        for _ in range(ALL_POSTS):
-            many_posts.append(Post(
-                author=cls.user,
-                text='Тестовый пост1234567',
-                group=cls.group
-            ))
-        Post.objects.bulk_create(many_posts)
 
     def setUp(self):
         # Создаем авторизованный клиент
@@ -46,23 +37,22 @@ class PostModelTest(TestCase):
 
     def test_home_page_show_correct_context(self):
         response = self.guest_client.get(reverse('posts:index'))
-        self.post_test(response.context['page_obj'][-1])
+        last_post = response.context['page_obj'][-1]
+        self.post_test(last_post)
 
     def test_group_list_show_correct_context(self):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}))
-        posts = list(response.context['page_obj'])
-        for i in posts:
-            self.post_test(i)
+        last_post = response.context['page_obj'][-1]
+        self.post_test(last_post)
 
     def test_profile_show_correct_context(self):
         response = self.guest_client.get(reverse(
             'posts:profile',
             kwargs={'username': self.post.author.username}))
-        posts = list(response.context['page_obj'])
-        for i in posts:
-            self.post_test(i)
+        last_post = response.context['page_obj'][-1]
+        self.post_test(last_post)
 
     def test_post_detail_pages_show_correct_context(self):
         response = self.guest_client.get(reverse(
