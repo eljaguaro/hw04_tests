@@ -1,6 +1,5 @@
 from ..forms import PostForm
 from ..models import Group, Post, User
-# from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -29,53 +28,42 @@ class PostModelTest(TestCase):
         self.authorized_client.force_login(self.user)
 
     def test_create_post(self):
-        post = Post.objects.exclude(pk=1)
-        """Валидная форма создает запись в Task."""
-        # Подсчитаем количество записей в Task
         posts_count = Post.objects.count()
         form_data = {
             'text': 'Тестовый текст',
             'group': self.group.id
         }
-        # Отправляем POST-запрос
         response = self.authorized_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True
         )
-        # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse(
             'posts:profile',
             kwargs={
                 'username':
                     self.user.username}))
-        # Проверяем, увеличилось ли число постов
+        post = Post.objects.exclude(pk=1).first()
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        # Проверяем, что создалась запись с заданным слагом
         self.assertTrue(
-            post.filter(
+            Post.objects.exclude(pk=1).filter(
                 text=form_data['text'],
                 author=self.user,
                 group=form_data['group']
             ).exists()
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        # Проверяем, что создалась запись с заданным слагом
         self.assertEqual(
-            post.first().id, self.post.id + 1)
+            post.text, form_data['text']),
         self.assertEqual(
-            post.first().text, form_data['text']),
-        self.assertEqual(
-            post.first().group.id,
+            post.group.id,
             form_data['group'])
 
     def test_edit_post(self):
-        post = Post.objects.all()
         form_data = {
             'text': 'Тестовый тексто',
             'group': self.group.id
         }
-        # Отправляем POST-запрос
         posts_count = Post.objects.count()
         response = self.authorized_client.post(reverse(
             'posts:post_edit',
@@ -85,13 +73,11 @@ class PostModelTest(TestCase):
             follow=True
         )
 
-        # Проверяем, сработал ли редирект
         self.assertRedirects(response,
                              reverse('posts:post_detail',
                                      kwargs={'post_id': self.post.id}))
-        # Проверяем, увеличилось ли число постов
+        post = Post.objects.all().first()
         self.assertEqual(Post.objects.count(), posts_count)
-        # Проверяем, что создалаь запись с заданным слагом
-        self.assertEqual(post.first().id, self.post.id)
-        self.assertEqual(post.first().text, form_data['text']),
-        self.assertEqual(post.first().group.id, form_data['group'])
+        self.assertEqual(post.id, self.post.id)
+        self.assertEqual(post.text, form_data['text']),
+        self.assertEqual(post.group.id, form_data['group'])

@@ -25,9 +25,8 @@ class PostModelTest(TestCase):
         )
 
     def setUp(self):
-        # Создаем авторизованный клиент
+        """ Создаем авторизованный клиент """
         self.guest_client = Client()
-        # self.user = User.objects.create_user(username='auth')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -108,19 +107,17 @@ class PaginatorViewsTest(TestCase):
         Post.objects.bulk_create(many_posts)
 
     def setUp(self):
-        # Создаем авторизованный клиент
+        """ Создаем авторизованный клиент """
         self.guest_client = Client()
         self.authorized_client = Client()
-        # self.authorized_client.force_login(self.user)
 
     def test_index_pag(self):
         response = self.guest_client.get(reverse('posts:index'))
         post = response.context['page_obj']
-        # Проверка: количество постов на первой странице равно 10.
         self.assertEqual(len(post), POSTSNUM_PAGE1)
 
     def test_index_pag2(self):
-        # Проверка: на второй странице должно быть три поста.
+        """ Проверка: на второй странице должно быть три поста """
         response = self.client.get(reverse('posts:index') + '?page=2')
         post = response.context['page_obj']
         self.assertEqual(len(post), POSTSNUM_PAGE2_1)
@@ -129,7 +126,6 @@ class PaginatorViewsTest(TestCase):
         response = self.guest_client.get(reverse(
             'posts:group_list',
             kwargs={'slug': self.group.slug}))
-        # Проверка: количество постов на первой странице равно 10.
         post = response.context['page_obj']
         self.assertEqual(len(post), POSTSNUM_PAGE1)
 
@@ -138,7 +134,7 @@ class PaginatorViewsTest(TestCase):
             'posts:group_list',
             kwargs={'slug': self.group.slug}) + '?page=2')
         post = response.context['page_obj']
-        # Проверка: количество постов на первой странице равно 10.
+
         self.assertEqual(len(post), POSTSNUM_PAGE2_1)
 
     def test_profile_pag(self):
@@ -156,61 +152,3 @@ class PaginatorViewsTest(TestCase):
                 'username': self.user.username}) + '?page=2')
         post = response.context['page_obj']
         self.assertEqual(len(post), POSTSNUM_PAGE2_1)
-
-
-class DopTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='autha')
-        cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='test-slug',
-            description='Тестовое описание',
-        )
-        cls.group2 = Group.objects.create(
-            title='Тестовая группа2',
-            slug='test-slug2',
-            description='Тестовое описание',
-        )
-        cls.post = Post.objects.create(
-            author=cls.user,
-            text='Test post',
-            group=cls.group
-        )
-
-    def setUp(self):
-        # Создаем авторизованный клиент
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        # self.authorized_client.force_login(self.user)
-
-    def test_index_post(self):
-        response = self.guest_client.get(reverse('posts:index'))
-        post = response.context['page_obj']
-        # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(post[-1], self.post)
-
-    def test_group_list_post(self):
-        response = self.guest_client.get(reverse(
-            'posts:group_list', kwargs={'slug': self.group.slug}))
-        # Проверка: количество постов на первой странице равно 10.
-        post = response.context['page_obj']
-        self.assertEqual(post[-1], self.post)
-
-    def test_wr_group_list_post(self):
-        response = self.guest_client.get(reverse(
-            'posts:group_list', kwargs={'slug': self.group2.slug}))
-        # Проверка: количество постов на первой странице равно 10.
-        post = response.context['page_obj']
-        self.assertEqual(len(post), POSTSNUM_PAGE_EMT)
-
-    def test_profile_page_post(self):
-        response = self.guest_client.get(reverse(
-            'posts:profile',
-            kwargs={
-                'username':
-                    self.post.author.username}))
-        # Проверка: количество постов на первой странице равно 10.
-        post = response.context['page_obj']
-        self.assertEqual(post[-1], self.post)
